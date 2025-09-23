@@ -1,3 +1,4 @@
+const { match } = require('assert');
 const mongoose = require('mongoose');
 
 const options = { discriminatorKey: "role", timestamps: true };
@@ -5,7 +6,12 @@ const options = { discriminatorKey: "role", timestamps: true };
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true }
+    password: {
+        type: String,
+        required: true,
+        match:  /^ (?=.* [A - Z])(?=.*\d)(?=.* [@$! %*?&]).{ 8, }$/
+            // /^ (?=.* [A - Z])(?=.*\d)(?=.* [@$! %*?&]).{ 8, }$/
+    }
 }, options);
 
 const User = mongoose.model("User", UserSchema);
@@ -14,9 +20,9 @@ const User = mongoose.model("User", UserSchema);
 const JobSeekerSchema = new mongoose.Schema({
     profilePhoto: { type: String },
     skills: [String],
-    experience: [{ type: String }],
-    education: [{ type: String }],
-    certificates: [{ type: String }]
+    experience: [String],
+    education: [String],
+    certificates: [String]
 });
 
 const JobSeeker = User.discriminator("jobSeeker", JobSeekerSchema);
