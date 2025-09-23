@@ -1,0 +1,82 @@
+Entities and Attributes
+
+3.	Job
+•	JobID (PK)
+•	Title
+•	Description
+•	Salary
+•	Requirements
+•	Category
+•	Location
+•	JobType
+•	PostedBy (Employer UserID, FK)
+•	Status (approved, pending, rejected)
+
+
+4.	Application
+•	ApplicationID (PK)
+•	UserID (FK, Job Seeker)
+•	JobID (FK)
+•	ApplicationDate
+•	Status (applied, shortlisted, rejected, hired)
+
+
+5.	SavedJob
+•	SavedJobID (PK)
+•	UserID (FK, Job Seeker)
+•	JobID (FK)
+•	SavedDate
+
+
+6.	JobAlert
+•	AlertID (PK)
+•	UserID (FK, Job Seeker)
+•	Preferences (keywords, location, job type, salary range)
+•	Enabled (boolean)
+
+9.	Notification
+•	NotificationID (PK)
+•	UserID (FK)
+•	Type (application update, new job, announcement)
+•	Message
+•	ReadStatus
+•	Date
+________________________________________
+Relationships
+•	A User can have one Role: Job Seeker, Employer, or Admin.
+•	An Employer (User) can post multiple Jobs.
+•	A Job Seeker (User) can apply to multiple Jobs through Applications.
+•	A Job Seeker (User) can save multiple Jobs through SavedJobs.
+•	A Job Seeker (User) can create multiple JobAlerts based on preferences.
+•	A Company can have multiple Reviews provided by Users (Job Seekers).
+•	A Candidate is linked to a User and can be searched by Employers.
+•	Notifications are associated with a User and communicate various updates.
+# ===================================
+const mongoose = require("mongoose");
+
+// الـ schema الأساسي
+const options = { discriminatorKey: "role", timestamps: true };
+
+const BaseUserSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true }
+  },
+  options
+);
+
+const User = mongoose.model("User", BaseUserSchema);
+
+// jobSeeker Schema
+const JobSeekerSchema = new mongoose.Schema({
+  profilePhoto: { type: String },
+  skills: [String],
+  experience: { type: String }
+});
+
+const JobSeeker = User.discriminator("jobSeeker", JobSeekerSchema);
+
+// employer Schema
+
+// admin Schema (ممكن يبقى فاضي أو ليه صلاحيات معينة)
