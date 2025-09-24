@@ -87,7 +87,7 @@ const deleteJob = async (req, res) => {
     try {
         const user = req.user;
         const { id } = req.params;
-        const deletedJob = await Job.findByIdAndDelete({ _id: id, company: user.companyId })
+        const deletedJob = await Job.findOneAndDelete({ _id: id, company: user.companyId });
         if (!deletedJob) {
             return res.status(404).json({ error: "Job not found or not authorized" });
         }
