@@ -30,7 +30,9 @@ const addReview = async (req, res) => {
 
 const updateReview = async (req, res) => {
     try {
-        const reviewId = req.params.id;
+       const {reviewId
+    } = req.params;
+        console.log(reviewId)
         const userId = req.user.id;
         const { rating, description } = req.body;
 
@@ -55,7 +57,7 @@ const updateReview = async (req, res) => {
 
 const deleteReview = async (req, res) => {
     try {
-        const reviewId = req.params.id;
+        const { reviewId } = req.params;
         const userId = req.user.id;
 
         const review = await Review.findById(reviewId);
@@ -67,7 +69,7 @@ const deleteReview = async (req, res) => {
             return res.status(403).json({ error: "Forbidden: cannot delete another user's review" });
         }
 
-        await review.remove();
+        await review.deleteOne();
         await Company.findByIdAndUpdate(review.companyId, { $pull: { reviews: review._id } });
 
         return res.status(200).json({ message: "Review deleted" });

@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "cors": "^2.8.5",
+    "jsonwebtoken": "^9.0.2",
+    "modules": "^0.4.0",
+    "node": "^23.4.0"
+  },
+  "devDependencies": {
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.3",
+    "connect-mongo": "^5.1.0",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "mongoose": "^8.9.0",
+    "nodemon": "^3.1.9",
+    "validator": "^13.12.0"
+  }
+}

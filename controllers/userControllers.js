@@ -20,18 +20,35 @@ const register = async (req, res) => {
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
         if (!passwordRegex.test(password)) {
             return res.status(400).json({
-                err: "Password must be ≥8 chars, include uppercase, number, and special char"
+                err: "Password must be ≥8 chars, include uppercase, number, and special char",
             });
         }
-        // ====================================================================================================
+
+        // ================= Hash Password =================
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // ================= Create User by Role =================
         let user;
         if (role === "jobSeeker") {
-            user = new JobSeeker({ name, email, password: hashedPassword, ...req.body });
+            const { profilePhoto, skills, experience, education, certificates } = req.body;
+            user = new JobSeeker({
+                name,
+                email,
+                password: hashedPassword,
+                profilePhoto,
+                skills,
+                experience,
+                education,
+                certificates,
+            });
         } else if (role === "employer") {
-            user = new Employer({ name, email, password: hashedPassword, ...req.body });
+            const { companyId } = req.body;
+            user = new Employer({
+                name,
+                email,
+                password: hashedPassword,
+                companyId,
+            });
         } else if (role === "admin") {
             user = new Admin({ name, email, password: hashedPassword });
         } else {
@@ -39,6 +56,7 @@ const register = async (req, res) => {
         }
 
         await user.save();
+        console.log("Saved user:", user);
 
         // ================= Response =================
         res.status(201).json({
@@ -47,10 +65,9 @@ const register = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role
-            }
+                role: user.role,
+            },
         });
-
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -82,15 +99,11 @@ const login = async (req, res) => {
             { expiresIn: "1d" }
         );
         // ========== Response ==========
+        // existingUser = existingUser.select("-password")
         res.status(200).json({
             message: "Login successful",
             token,
-            user: {
-                id: existingUser._id,
-                name: existingUser.name,
-                email: existingUser.email,
-                role: existingUser.role,
-            }
+            user: existingUser
         });
 
     } catch (err) {
@@ -104,6 +117,8 @@ const updateProfile = async (req, res) => {
     try {
         const userId = req.user.id;
         const updates = req.body;
+        console.log("Incoming body:", req.body);
+
 
         const allowedFields = [
             "name",
@@ -121,18 +136,17 @@ const updateProfile = async (req, res) => {
                 filteredUpdates[key] = updates[key];
             }
         }
-
-
-        const updatedUser = await User.findByIdAndUpdate(
+       
+        const updatedUser = await JobSeeker.findByIdAndUpdate(
             userId,
             { $set: filteredUpdates },
             { new: true, runValidators: true }
         ).select("-password"); //=>>updateAll-!pass
 
-
+console.log(updatedUser)
         res.status(200).json({
             message: "Profile updated successfully",
-            user: updatedUser
+             updatedUser
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -195,8 +209,8 @@ const viewProfile = async (req, res) => {
 const viewUserProfile = async (req, res) => {
     try {
         const { userId } = req.params;
-
-        if (req.user.role !== "admin" || req.user.role !== "employer") {
+        console.log(req.user.role)
+        if (req.user.role != "admin" && req.user.role != "employer") {
             return res.status(403).json({ err: "Access denied." });
         }
 

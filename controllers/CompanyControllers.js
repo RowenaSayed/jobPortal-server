@@ -45,6 +45,7 @@ const updateCompany = async (req, res) => {
         const company = await Company.findByIdAndUpdate(
             companyId,
             { name, description, logo },
+            { new: true, runValidators: true }
         )
         return res.status(200).json({ message: "Company updated", company });
 
@@ -71,7 +72,10 @@ const viewCompany = async (req, res) => {
             path: 'user',
             select: 'name profilePhoto'
         })
-        return res.status(200).json({ company: employer.companyId }, companyReviws);
+        return res.status(200).json({
+            company: employer.companyId,
+            reviews: companyReviws
+        });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
@@ -98,4 +102,4 @@ const viewUserCompany = async (req, res) => {
 //=======VIEW COMPANY REVIEWS ======================
 
 
-module.exports = { createCompany, updateCompany, viewCompany };
+module.exports = { createCompany, updateCompany, viewCompany,viewUserCompany };

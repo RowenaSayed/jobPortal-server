@@ -9,8 +9,9 @@ const UserSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-        match:  /^ (?=.* [A - Z])(?=.*\d)(?=.* [@$! %*?&]).{ 8, }$/
-            // /^ (?=.* [A - Z])(?=.*\d)(?=.* [@$! %*?&]).{ 8, }$/
+        // match: /^(?=.*[A-Z])(?=.*\d)(?=.* [@$! %*?&]).{ 8, }$/
+
+        // /^ (?=.* [A - Z])(?=.*\d)(?=.* [@$! %*?&]).{ 8, }$/
     }
 }, options);
 
