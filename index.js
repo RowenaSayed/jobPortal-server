@@ -26,6 +26,7 @@ const reviewRoutes = require('./routes/reviewsRoutes');
 app.use('/api/users', userRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/jobs', reviewRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
