@@ -7,6 +7,8 @@ const {
     getSavedJobDetails
 } = require('../controllers/savedJobsControllers');
 const { authMiddleware, authorize } = require('../middleware/auth');
+// ====================================================================
+
 router.post('/', authMiddleware, authorize(['jobSeeker']), addSavedJob);
 router.get('/', authMiddleware, authorize(['jobSeeker']), getMySavedJobs);
 router.get('/:id', authMiddleware, authorize(['jobSeeker']), getSavedJobDetails);

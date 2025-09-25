@@ -20,23 +20,23 @@ const addSavedJob = async (req, res) => {
             });
         }
         // =============================
-        const { jobId } = req.body;
-        if (!jobId) {
+        const { job } = req.body;
+        if (!job) {
             return res.status(400).json({ message: "Job ID is required" });
         }
-        const checkJob = await Job.findById(jobId);
+        const checkJob = await Job.findById(job);
         if (!checkJob) {
             return res.status(404).json({ message: "Job not found" });
         }
         //========================================
-        const alreadySaved = await SavedJob.findOne({ user: user.id, job: jobId });
+        const alreadySaved = await SavedJob.findOne({ user: user.id, job });
         if (alreadySaved) {
             return res.status(400).json({ message: "Job already saved" });
         }
 
         const savedJob = new SavedJob({
             user: user.id,
-            job: jobId
+            job
         });
 
         await savedJob.save();
@@ -109,7 +109,7 @@ const getSavedJobDetails = async (req, res) => {
         const { id } = req.params; 
 
         const savedJob = await SavedJob.findOne({ _id: id, user: user.id })
-            .populate("job");
+            .populate({ path: "job", select: "-applicants" })
 
         if (!savedJob) {
             return res.status(404).json({ message: "Saved job not found" });
