@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { createJob, updateJob, deleteJob, getAllJobs, getAllEmployerJobs, getMyJobsApplications } = require('../controllers/jobsControllers');
+const { createJob, updateJob, deleteJob, getAllJobs, getAllEmployerJobs, getMyJobsApplications,getJobDetails } = require('../controllers/jobsControllers');
 const { authMiddleware, authorize } = require('../middleware/auth');
 router.post('/', authMiddleware, authorize(['employer']), createJob);
 router.patch('/:id', authMiddleware, authorize(['employer']), updateJob);
 router.delete('/:id', authMiddleware, authorize(['employer', 'admin']), deleteJob);
 router.get('/my-jobs', authMiddleware, authorize(['employer']), getAllEmployerJobs);
 router.get('/my-jobs/applications', authMiddleware, authorize(['employer']), getMyJobsApplications);
+router.get('/', getAllJobs);
+router.get('/:id', getJobDetails);
 
 module.exports = router;
 

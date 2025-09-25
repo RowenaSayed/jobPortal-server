@@ -174,11 +174,30 @@ const getMyJobsApplications = async (req, res) => {
     }
 };
 
+//job details
+
+const getJobDetails = async (req, res) => {
+    try {
+
+        const { id } = req.params; 
+
+        const job = await Job.findOne({ _id: id }).select('-applicants')
+
+        if (!job) {
+            return res.status(404).json({ message: " job not found" });
+        }
+
+        return res.status(200).json({ job });
+    } catch (err) {
+        return res.status(500).json({ message: "Internal server error", error: err.message });
+    }
+};
 module.exports = {
     createJob,
     updateJob,
     deleteJob,
     getAllJobs,
     getAllEmployerJobs,
-    getMyJobsApplications
+    getMyJobsApplications,
+    getJobDetails
 }
