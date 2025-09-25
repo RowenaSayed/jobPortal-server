@@ -1,3 +1,4 @@
+const { timeStamp } = require("console");
 const mongoose = require("mongoose");
 
 const JobSchema = new mongoose.Schema({
@@ -54,6 +55,7 @@ const JobSchema = new mongoose.Schema({
                 default: "Applied"
             }
         }
+        //add timestamp
     ],
     deadline: {
         type: Date,
