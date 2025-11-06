@@ -7,66 +7,62 @@ const register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
-        // ================= Validation =================
         if (!name || !email || !password || !role) {
-            return res.status(400).json({ err: "All fields are required" });
+            return res.status(400).json({ error: "All fields are required" });
         }
 
-        const existingUser = await User.findOne({ email });
+        const normalizedEmail = email.toLowerCase();
+        const existingUser = await User.findOne({ email: normalizedEmail });
         if (existingUser) {
-            return res.status(400).json({ err: "Email already registered" });
+            return res.status(400).json({ error: "Email already registered" });
         }
 
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
         if (!passwordRegex.test(password)) {
             return res.status(400).json({
-                err: "Password must be ≥8 chars, include uppercase, number, and special char",
+                error: "Password must be ≥8 chars, include uppercase, number, and special char"
             });
         }
 
-        // ================= Hash Password =================
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // ================= Create User by Role =================
         let user;
-        if (role === "jobSeeker") {
+
+        if (role === "JobSeeker") {
             const { profilePhoto, skills, experience, education, certificates } = req.body;
             user = new JobSeeker({
                 name,
-                email,
+                email: normalizedEmail,
                 password: hashedPassword,
                 profilePhoto,
                 skills,
                 experience,
                 education,
-                certificates,
+                certificates
             });
-        } else if (role === "employer") {
+        } else if (role === "Employer") {
             const { companyId } = req.body;
             user = new Employer({
                 name,
-                email,
+                email: normalizedEmail,
                 password: hashedPassword,
-                companyId,
+                companyId
             });
-        } else if (role === "admin") {
-            user = new Admin({ name, email, password: hashedPassword });
+        } else if (role === "Admin") {
+            user = new Admin({ name, email: normalizedEmail, password: hashedPassword });
         } else {
-            return res.status(400).json({ err: "Invalid role" });
+            return res.status(400).json({ error: "Invalid role" });
         }
 
         await user.save();
-        console.log("Saved user:", user);
 
-        // ================= Response =================
         res.status(201).json({
             message: "User registered successfully",
             user: {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role,
-            },
+                role: user.role
+            }
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -74,110 +70,103 @@ const register = async (req, res) => {
 };
 
 // ================= LOGIN =================
-
 const login = async (req, res) => {
     try {
-        // ==================================
         const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).json({ err: "All fields are required" });
-        }
-        // ==========================================
-        const existingUser = await User.findOne({ email });
-        if (!existingUser) {
-            return res.status(400).json({ err: "this not registerd email" });
-        }
-        // ========== Compare Password ==========
+        if (!email || !password)
+            return res.status(400).json({ error: "All fields are required" });
+
+        const normalizedEmail = email.toLowerCase();
+        const existingUser = await User.findOne({ email: normalizedEmail });
+        if (!existingUser)
+            return res.status(400).json({ error: "This email is not registered" });
+
         const isMatch = await bcrypt.compare(password, existingUser.password);
-        if (!isMatch) {
-            return res.status(400).json({ err: "Invalid credentials" });
-        }
-        // =========================
+        if (!isMatch)
+            return res.status(400).json({ error: "Invalid credentials" });
+
         const token = jwt.sign(
             { id: existingUser._id, role: existingUser.role },
             process.env.JWT_SECRET,
             { expiresIn: "1d" }
         );
-        // ========== Response ==========
-        // existingUser = existingUser.select("-password")
+
+        const { password: _, ...userData } = existingUser.toObject();
+
         res.status(200).json({
             message: "Login successful",
             token,
-            user: existingUser
-        });
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-}
-
-// ================= Update Profile  =================
-
-const updateProfile = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const updates = req.body;
-        console.log("Incoming body:", req.body);
-
-
-        const allowedFields = [
-            "name",
-            "email",
-            "profilePhoto",
-            "skills",
-            "experience",
-            "education",
-            "certificates"
-        ];
-
-        const filteredUpdates = {};
-        for (let key of allowedFields) {
-            if (updates[key] !== undefined) {
-                filteredUpdates[key] = updates[key];
-            }
-        }
-       
-        const updatedUser = await JobSeeker.findByIdAndUpdate(
-            userId,
-            { $set: filteredUpdates },
-            { new: true, runValidators: true }
-        ).select("-password"); //=>>updateAll-!pass
-
-console.log(updatedUser)
-        res.status(200).json({
-            message: "Profile updated successfully",
-             updatedUser
+            user: userData
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
+// ================= UPDATE PROFILE =================
+const updateProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const updates = req.body;
 
-// ================= Change Password =================
+        const allowedFieldsByRole = {
+            JobSeeker: ["name", "email", "profilePhoto", "skills", "experience", "education", "certificates"],
+            Employer: ["name", "email"],
+            Admin: ["name", "email"]
+        };
+
+        const allowedFields = allowedFieldsByRole[req.user.role] || [];
+        const filteredUpdates = {};
+        for (let key of allowedFields) {
+            if (updates[key] !== undefined) {
+                filteredUpdates[key] = updates[key];
+            }
+        }
+
+        const Model = req.user.role === "JobSeeker"
+            ? JobSeeker
+            : req.user.role === "Employer"
+                ? Employer
+                : User;
+
+        const updatedUser = await Model.findByIdAndUpdate(
+            userId,
+            { $set: filteredUpdates },
+            { new: true, runValidators: true }
+        ).select("-password");
+
+        if (!updatedUser) return res.status(404).json({ error: "User not found" });
+
+        res.status(200).json({
+            message: "Profile updated successfully",
+            user: updatedUser
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// ================= CHANGE PASSWORD =================
 const changePassword = async (req, res) => {
     try {
         const userId = req.user.id;
         const { oldPassword, newPassword } = req.body;
 
-        if (!oldPassword || !newPassword) {
-            return res.status(400).json({ err: "Both old and new password required" });
-        }
+        if (!oldPassword || !newPassword)
+            return res.status(400).json({ error: "Both old and new password required" });
 
         const existingUser = await User.findById(userId);
-        if (!existingUser) {
-            return res.status(404).json({ err: "User not found" });
-        }
+        if (!existingUser)
+            return res.status(404).json({ error: "User not found" });
 
         const isMatch = await bcrypt.compare(oldPassword, existingUser.password);
-        if (!isMatch) {
-            return res.status(400).json({ err: "Old password is incorrect" });
-        }
+        if (!isMatch)
+            return res.status(400).json({ error: "Old password is incorrect" });
 
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
         if (!passwordRegex.test(newPassword)) {
             return res.status(400).json({
-                err: "Password must be ≥8 chars, include uppercase, number, and special char"
+                error: "Password must be ≥8 chars, include uppercase, number, and special char"
             });
         }
 
@@ -190,34 +179,30 @@ const changePassword = async (req, res) => {
     }
 };
 
-// ================= View Profile  =================
+// ================= VIEW PROFILE =================
 const viewProfile = async (req, res) => {
     try {
         const userId = req.user.id;
         const user = await User.findById(userId).select("-password");
-
-        if (!user) {
-            return res.status(404).json({ err: "User not found" });
-        }
+        if (!user) return res.status(404).json({ error: "User not found" });
 
         res.status(200).json({ user });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
-// ================= Admin View Any User Profile =================
+
+// ================= ADMIN / EMPLOYER VIEW ANY USER =================
 const viewUserProfile = async (req, res) => {
     try {
         const { userId } = req.params;
-        console.log(req.user.role)
-        if (req.user.role != "admin" && req.user.role != "employer") {
-            return res.status(403).json({ err: "Access denied." });
+
+        if (req.user.role !== "Admin" && req.user.role !== "Employer") {
+            return res.status(403).json({ error: "Access denied" });
         }
 
         const user = await User.findById(userId).select("-password");
-        if (!user) {
-            return res.status(404).json({ err: "User not found" });
-        }
+        if (!user) return res.status(404).json({ error: "User not found" });
 
         res.status(200).json({ user });
     } catch (err) {
@@ -225,5 +210,11 @@ const viewUserProfile = async (req, res) => {
     }
 };
 
-
-module.exports = { register, login, updateProfile, viewProfile, viewUserProfile, changePassword };
+module.exports = {
+    register,
+    login,
+    updateProfile,
+    changePassword,
+    viewProfile,
+    viewUserProfile
+};

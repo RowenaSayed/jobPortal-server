@@ -3,23 +3,25 @@ const mongoose = require("mongoose");
 const CompanySchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     description: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     logo: {
-        type: String
+        type: String,
+        default: null
     },
-    reviews: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Review"   
-        }
-    ]
+    reviews: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Review"
+    }],
+    industry: { type: String },
+    website: { type: String },
+    location: { type: String }
 }, { timestamps: true });
 
-const Company = mongoose.model("Company", CompanySchema);
-
-module.exports = Company;
+module.exports = mongoose.model("Company", CompanySchema);

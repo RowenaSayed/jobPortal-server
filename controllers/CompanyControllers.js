@@ -1,22 +1,18 @@
-const Company = require('../models/Company');
-const { Employer } = require('../models/User');
-const Review = require('../models/review');
+const Company = require("../models/Company");
+const { Employer } = require("../models/User");
+const Review = require("../models/Review");
 
 //=======CREATE COMPANY======================
 const createCompany = async (req, res) => {
     try {
         const userId = req.user.id;
-        if (!userId) {
-            return res.status(401).json({ error: "Unauthorized" });
-        }
+        if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
         const { name, description, logo } = req.body;
-        if (!name || !description) {
+        if (!name || !description)
             return res.status(400).json({ error: "name and description are required" });
-        }
 
-        const company = new Company({ name, description, logo });
-        await company.save();
+        const company = await Company.create({ name, description, logo });
 
         await Employer.findByIdAndUpdate(userId, { companyId: company._id });
 
@@ -25,81 +21,72 @@ const createCompany = async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 };
+
 //=======UPDATE COMPANY======================
 const updateCompany = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { name, description, logo } = req.body;
+        if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-        if (!userId) {
-            return res.status(401).json({ error: "Unauthorized" });
-        }
         const employer = await Employer.findById(userId);
-        if (!employer || !employer.companyId) {
+        if (!employer || !employer.companyId)
             return res.status(404).json({ error: "No company associated with this user" });
-        }
 
-        // =================================================
-        const companyId = employer.companyId;
-
+        const { name, description, logo } = req.body;
         const company = await Company.findByIdAndUpdate(
-            companyId,
+            employer.companyId,
             { name, description, logo },
             { new: true, runValidators: true }
-        )
+        );
+
         return res.status(200).json({ message: "Company updated", company });
-
     } catch (err) {
-        return res.status(500).json({ error: err.message })
+        return res.status(500).json({ error: err.message });
     }
-}
+};
 
-///=======VIEW COMPANY======================
+//=======VIEW COMPANY======================
 const viewCompany = async (req, res) => {
     try {
         const userId = req.user.id;
+        if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-        if (!userId) {
-            return res.status(401).json({ error: "Unauthorized" });
-        }
-
-        const employer = await Employer.findById(userId).populate('companyId');
-        if (!employer || !employer.companyId) {
+        const employer = await Employer.findById(userId).populate("companyId");
+        if (!employer || !employer.companyId)
             return res.status(404).json({ error: "No company associated with this user" });
-        }
 
-        const companyReviws = await Review.find({ companyId: employer.companyId }).populate({
-            path: 'user',
-            select: 'name profilePhoto'
-        })
+        const companyReviews = await Review.find({ companyId: employer.companyId })
+            .populate("user", "name profilePhoto");
+
         return res.status(200).json({
             company: employer.companyId,
-            reviews: companyReviws
+            reviews: companyReviews
         });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
 };
-///=======VIEW COMPANY for users and admin==
+
+//=======VIEW COMPANY (for users/admin)======
 const viewUserCompany = async (req, res) => {
     try {
         const { companyId } = req.params;
+
         const company = await Company.findById(companyId);
-        if (!company) {
-            return res.status(404).json({ err: "Company not found" });
-        }
-        const companyReviws = await Review.find({ companyId }).populate({
-            path: 'user',
-            select: 'name profilePhoto'
-        })
+        if (!company) return res.status(404).json({ error: "Company not found" });
 
-        res.status(200).json({ company, reviews: companyReviws });
+        const companyReviews = await Review.find({ companyId })
+            .populate("user", "name profilePhoto");
 
+        return res.status(200).json({ company, reviews: companyReviews });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
-}
-//=======VIEW COMPANY REVIEWS ======================
+};
 
-
-module.exports = { createCompany, updateCompany, viewCompany,viewUserCompany };
+module.exports = {
+    createCompany,
+    updateCompany,
+    viewCompany,
+    viewUserCompany
+};

@@ -1,28 +1,22 @@
-const Job = require('../models/Job')
-// add job
+const Job = require("../models/Job");
+const Application = require("../models/Applications");
 
+//  Create a single job (Employers only)
 const createJob = async (req, res) => {
     try {
         const user = req.user;
+
         if (!user || !user.id) {
-            return res.status(401).json({
-                message: "Unauthorized - user not found"
-            });
+            return res.status(401).json({ message: "Unauthorized - user not found" });
         }
 
         if (user.role !== "employer") {
-            return res.status(403).json({
-                message: "You are denied to add job"
-            });
+            return res.status(403).json({ message: "Access denied - only employers can post jobs" });
         }
 
         if (!user.companyId) {
-            return res.status(400).json({
-                message: "Company ID is required to add job"
-            });
+            return res.status(400).json({ message: "Company ID is required to add a job" });
         }
-
-        const companyId = user.companyId;
 
         const {
             title,
@@ -30,83 +24,197 @@ const createJob = async (req, res) => {
             jobType,
             educationLevel,
             experienceLevel,
-            salary,
+            salary_min,
+            salary_max,
+            salary_currency,
+            benefitsOffered,
             description,
             skillsRequired,
-            deadline
+            additionalRequirements,
+            applicationMethod,
+            deadline,
         } = req.body;
+
         if (!title || !description || !deadline) {
-            return res.status(400).json({
-                message: "title, description, and deadline are required"
-            });
+            return res.status(400).json({ message: "Title, description, and deadline are required" });
         }
+
+        // 🧠 Enum validation
+        const validJobTypes = ["Full-time", "Part-time", "Internship", "Contract"];
+        const validEducationLevels = ["Student", "Bachelor's", "Master's", "PhD", "Other"];
+        const validExperienceLevels = ["Internship", "Entry-level", "Mid-level", "Senior"];
+        const validCurrencies = ["USD ($)", "EUR (€)", "EGP (£)"];
+        const validApplicationMethods = ["Apply on JobLink", "External Link", "Email"];
+
+        if (jobType && !validJobTypes.includes(jobType)) {
+            return res.status(400).json({ message: "Invalid job type" });
+        }
+        if (educationLevel && !validEducationLevels.includes(educationLevel)) {
+            return res.status(400).json({ message: "Invalid education level" });
+        }
+        if (experienceLevel && !validExperienceLevels.includes(experienceLevel)) {
+            return res.status(400).json({ message: "Invalid experience level" });
+        }
+        if (salary_currency && !validCurrencies.includes(salary_currency)) {
+            return res.status(400).json({ message: "Invalid salary currency" });
+        }
+        if (applicationMethod && !validApplicationMethods.includes(applicationMethod)) {
+            return res.status(400).json({ message: "Invalid application method" });
+        }
+
         const newJob = await Job.create({
             title,
-            company: companyId,
+            company: user.companyId,
             location,
             jobType,
             educationLevel,
             experienceLevel,
-            salary,
+            salary_min,
+            salary_max,
+            salary_currency,
+            benefitsOffered,
             description,
             skillsRequired,
-            deadline
+            additionalRequirements,
+            applicationMethod,
+            deadline,
+            status: "pending",
         });
 
-        res.status(201).json({ message: "job added successfully", newJob });
+        return res.status(201).json({
+            message: "Job added successfully",
+            job: newJob,
+        });
     } catch (err) {
-        return res.status(400).json({ error: err.message });
+        return res.status(500).json({ message: "Internal server error", error: err.message });
     }
-}
-// update job
+};
 
+//  Create multiple jobs (bulk insert)
+const createMultipleJobs = async (req, res) => {
+    try {
+        const user = req.user;
+
+        if (!user || user.role !== "employer") {
+            return res.status(403).json({ message: "Access denied - only employers can post jobs" });
+        }
+
+        if (!user.companyId) {
+            return res.status(400).json({ message: "Company ID is required to add jobs" });
+        }
+
+        const jobs = req.body.jobs;
+        if (!Array.isArray(jobs) || jobs.length === 0) {
+            return res.status(400).json({ message: "Please provide an array of job objects" });
+        }
+
+        const validJobTypes = ["Full-time", "Part-time", "Internship", "Contract"];
+        const validEducationLevels = ["Student", "Bachelor's", "Master's", "PhD", "Other"];
+        const validExperienceLevels = ["Internship", "Entry-level", "Mid-level", "Senior"];
+        const validCurrencies = ["USD ($)", "EUR (€)", "EGP (£)"];
+        const validApplicationMethods = ["Apply on JobLink", "External Link", "Email"];
+
+        // 🧩 Validate and attach company ID
+        const preparedJobs = jobs.map((job, index) => {
+            const { title, description, deadline } = job;
+            if (!title || !description || !deadline) {
+                throw new Error(`Missing required fields in job at index ${index}`);
+            }
+
+            if (job.jobType && !validJobTypes.includes(job.jobType)) {
+                throw new Error(`Invalid job type at index ${index}`);
+            }
+            if (job.educationLevel && !validEducationLevels.includes(job.educationLevel)) {
+                throw new Error(`Invalid education level at index ${index}`);
+            }
+            if (job.experienceLevel && !validExperienceLevels.includes(job.experienceLevel)) {
+                throw new Error(`Invalid experience level at index ${index}`);
+            }
+            if (job.salary_currency && !validCurrencies.includes(job.salary_currency)) {
+                throw new Error(`Invalid salary currency at index ${index}`);
+            }
+            if (job.applicationMethod && !validApplicationMethods.includes(job.applicationMethod)) {
+                throw new Error(`Invalid application method at index ${index}`);
+            }
+
+            return {
+                ...job,
+                company: user.companyId,
+                status: "pending",
+            };
+        });
+
+        const createdJobs = await Job.insertMany(preparedJobs);
+
+        return res.status(201).json({
+            message: `${createdJobs.length} jobs added successfully`,
+            jobs: createdJobs,
+        });
+    } catch (err) {
+        res.status(500).json({ message: "Internal server error", error: err.message });
+    }
+};
+
+//  Update job
 const updateJob = async (req, res) => {
     try {
         const user = req.user;
         const { id } = req.params;
 
+        if (user.role !== "employer") {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
         const job = await Job.findOneAndUpdate(
             { _id: id, company: user.companyId },
             { $set: req.body },
-            { new: true }
+            { new: true, runValidators: true }
         );
 
         if (!job) {
-            return res.status(404).json({ error: "Job not found or not authorized" });
+            return res.status(404).json({ message: "Job not found or not authorized" });
         }
 
-        res.json({ message: "Job updated successfully", job });
+        res.status(200).json({ message: "Job updated successfully", job });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        res.status(500).json({ message: "Internal server error", error: err.message });
     }
 };
 
-// delete job
-
+//  Delete job
 const deleteJob = async (req, res) => {
     try {
         const user = req.user;
         const { id } = req.params;
-        const deletedJob = await Job.findOneAndDelete({ _id: id, company: user.companyId });
-        if (!deletedJob) {
-            return res.status(404).json({ error: "Job not found or not authorized" });
+
+        if (user.role !== "employer") {
+            return res.status(403).json({ message: "Access denied" });
         }
 
-        res.json({ message: "Job deleted successfully" });
+        const deletedJob = await Job.findOneAndDelete({ _id: id, company: user.companyId });
+        if (!deletedJob) {
+            return res.status(404).json({ message: "Job not found or not authorized" });
+        }
+
+        res.status(200).json({ message: "Job deleted successfully" });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        res.status(500).json({ message: "Internal server error", error: err.message });
     }
-}
-// retreive all jobs for all users
+};
+
+//  Retrieve all jobs (public)
 const getAllJobs = async (req, res) => {
     try {
-        const allJobs = await Job.find().select('-applicants').sort({ createdAt: -1 });
-        res.json(allJobs);
+        const jobs = await Job.find()
+            .populate("company", "name logo location")
+            .sort({ createdAt: -1 });
+        res.status(200).json(jobs);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: "Internal server error", error: error.message });
     }
-}
-//retrive my jobs
+};
+
+//  Retrieve jobs for current employer
 const getAllEmployerJobs = async (req, res) => {
     try {
         const user = req.user;
@@ -116,88 +224,68 @@ const getAllEmployerJobs = async (req, res) => {
         }
 
         if (user.role !== "employer") {
-            return res.status(403).json({ message: "You are denied (just for Employers)" });
+            return res.status(403).json({ message: "Access denied - only employers allowed" });
         }
 
-        const selectedJobs = await Job.find({ company: user.companyId })
-            .populate("company", "name")
+        const jobs = await Job.find({ company: user.companyId })
+            .populate("company", "name logo")
             .sort({ createdAt: -1 });
 
-        if (!selectedJobs || selectedJobs.length === 0) {
+        if (!jobs.length) {
             return res.status(404).json({ message: "No jobs found for this employer" });
         }
 
-        res.status(200).json(selectedJobs);
+        res.status(200).json(jobs);
     } catch (error) {
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
 
-// retreive just my applications for my jobs
+//  Retrieve job details by ID
+const getJobDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const job = await Job.findById(id).populate("company", "name logo description location");
+
+        if (!job) {
+            return res.status(404).json({ message: "Job not found" });
+        }
+
+        res.status(200).json({ job });
+    } catch (err) {
+        res.status(500).json({ message: "Internal server error", error: err.message });
+    }
+};
+
+//  Get all applications for my posted jobs (employer)
 const getMyJobsApplications = async (req, res) => {
     try {
         const user = req.user;
 
-        if (!user || !user.id) {
-            return res.status(401).json({ message: "Unauthorized - user not found" });
-        }
-
         if (user.role !== "employer") {
-            return res.status(403).json({ message: "You are denied (just for Employers)" });
+            return res.status(403).json({ message: "Access denied" });
         }
 
-        const selectedJobs = await Job.find({ company: user.companyId })
-            .populate("applicants", "-password")
-            .sort({ createdAt: -1 });
+        const jobs = await Job.find({ company: user.companyId }).select("_id title");
+        const jobIds = jobs.map((job) => job._id);
 
-        if (!selectedJobs || selectedJobs.length === 0) {
-            return res.status(404).json({ message: "No jobs found for this employer" });
-        }
+        const applications = await Application.find({ job: { $in: jobIds } })
+            .populate("job", "title")
+            .populate("applicant", "name email");
 
-        const applicants = selectedJobs.flatMap(job =>
-            job.applicants.map(a => ({
-                ...a._doc,
-                jobTitle: job.title,
-                // jobId: job._id
-            }))
-        );
-
-        // const applicants = selectedJobs.flatMap(job => job.applicants);
-
-        if (applicants.length === 0) {
-            return res.status(404).json({ message: "No applicants found for your jobs" });
-        }
-
-        res.status(200).json(applicants);
-    } catch (error) {
-        res.status(500).json({ message: "Internal server error", error: error.message });
-    }
-};
-
-//job details
-
-const getJobDetails = async (req, res) => {
-    try {
-
-        const { id } = req.params; 
-
-        const job = await Job.findOne({ _id: id }).select('-applicants')
-
-        if (!job) {
-            return res.status(404).json({ message: " job not found" });
-        }
-
-        return res.status(200).json({ job });
+        res.status(200).json({ total: applications.length, applications });
     } catch (err) {
-        return res.status(500).json({ message: "Internal server error", error: err.message });
+        res.status(500).json({ message: "Internal server error", error: err.message });
     }
 };
+
 module.exports = {
     createJob,
+    createMultipleJobs,
     updateJob,
     deleteJob,
     getAllJobs,
     getAllEmployerJobs,
     getMyJobsApplications,
-    getJobDetails
-}
+    getJobDetails,
+};

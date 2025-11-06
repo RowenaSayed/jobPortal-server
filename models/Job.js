@@ -1,17 +1,8 @@
-const { timeStamp } = require("console");
 const mongoose = require("mongoose");
 
 const JobSchema = new mongoose.Schema({
-    title: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    company: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Company",
-        required: true
-    },
+    title: { type: String, required: true, trim: true },
+    company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
     location: { type: String },
     jobType: {
         type: String,
@@ -20,8 +11,8 @@ const JobSchema = new mongoose.Schema({
     },
     educationLevel: {
         type: String,
-        enum: ["student", "Bachelor", "Master", "PhD", "Other"],
-        default: "Bachelor"
+        enum: ["Student", "Bachelor's Degree", "Master's Degree", "PhD", "Other"],
+        default: "Bachelor's Degree"
     },
     experienceLevel: {
         type: String,
@@ -29,40 +20,30 @@ const JobSchema = new mongoose.Schema({
         default: "Entry-level"
     },
     salary: {
-        min: { type: Number },
-        max: { type: Number },
+        min: Number,
+        max: Number,
         currency: {
             type: String,
             enum: ["USD ($)", "EUR (€)", "EGP (£)"],
             default: "USD ($)"
-        }
+        },
+        benefitsOffered:{ type: String},
     },
-    description: {
-        type: String,
-        required: true
-    },
+    description: { type: String, required: true },
     skillsRequired: [String],
-    applicants: [
-        {
-            applicant: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "JobSeeker",
-                required: true
-            },
-            status: {
-                type: String,
-                enum: ["Applied", "Pending", "Accepted", "Rejected"],
-                default: "Applied"
-            }
-        }
-        //add timestamp
-    ],
-    deadline: {
-        type: Date,
-        required: true
-    }
+    additionalRequirements: { type: String },
+    applicationMethod: {
+        type: String,
+        enum: ["Apply on JobLink", "External Link", "Email"],
+        default: "Apply on JobLink"
+    },
+    deadline: { type: Date, required: true },
+    status: {
+        type: String,
+        enum: ["pending", "approved", "rejected"],
+        default: "pending"
+    },
 }, { timestamps: true });
 
 const Job = mongoose.model("Job", JobSchema);
-
 module.exports = Job;
