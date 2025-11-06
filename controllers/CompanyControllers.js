@@ -1,6 +1,6 @@
 const Company = require("../models/Company");
 const { Employer } = require("../models/User");
-const Review = require("../models/Review");
+const Review = require("../models/review");
 
 // ============ CREATE COMPANY ============
 const createCompany = async (req, res) => {

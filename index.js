@@ -23,9 +23,9 @@ const companyRoutes = require('./routes/companyRoutes');
 const reviewRoutes = require('./routes/reviewsRoutes');
 const jobsRoutes = require('./routes/jobsRoutes');
 const SavedjobsRoutes = require('./routes/savedJobsRoutes');
+const appsRoutes = require('./routes/ApplicationRoutes');
 
-
-
+app.use('/api/apps', appsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/reviews', reviewRoutes);
