@@ -7,6 +7,7 @@ const register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
+        // Basic validation
         if (!name || !email || !password || !role) {
             return res.status(400).json({ error: "All fields are required" });
         }
@@ -17,6 +18,7 @@ const register = async (req, res) => {
             return res.status(400).json({ error: "Email already registered" });
         }
 
+        // Password validation
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
         if (!passwordRegex.test(password)) {
             return res.status(400).json({
@@ -27,18 +29,35 @@ const register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         let user;
 
+        // Create user based on role
         if (role === "JobSeeker") {
-            const { profilePhoto, skills, experience, education, certificates } = req.body;
+            const {
+                profilePhoto,
+                personalHeadline,
+                about,
+                location,
+                resume,
+                skills,
+                experience,
+                education,
+                certificates
+            } = req.body;
+
             user = new JobSeeker({
                 name,
                 email: normalizedEmail,
                 password: hashedPassword,
                 profilePhoto,
+                personalHeadline,
+                about,
+                location,
+                resume,
                 skills,
                 experience,
                 education,
                 certificates
             });
+
         } else if (role === "Employer") {
             const { companyId } = req.body;
             user = new Employer({
@@ -47,8 +66,14 @@ const register = async (req, res) => {
                 password: hashedPassword,
                 companyId
             });
+
         } else if (role === "Admin") {
-            user = new Admin({ name, email: normalizedEmail, password: hashedPassword });
+            user = new Admin({
+                name,
+                email: normalizedEmail,
+                password: hashedPassword
+            });
+
         } else {
             return res.status(400).json({ error: "Invalid role" });
         }
@@ -77,21 +102,21 @@ const login = async (req, res) => {
             return res.status(400).json({ error: "All fields are required" });
 
         const normalizedEmail = email.toLowerCase();
-        const existingUser = await User.findOne({ email: normalizedEmail });
-        if (!existingUser)
+        const user = await User.findOne({ email: normalizedEmail });
+        if (!user)
             return res.status(400).json({ error: "This email is not registered" });
 
-        const isMatch = await bcrypt.compare(password, existingUser.password);
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch)
             return res.status(400).json({ error: "Invalid credentials" });
 
         const token = jwt.sign(
-            { id: existingUser._id, role: existingUser.role },
+            { id: user._id, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: "1d" }
         );
 
-        const { password: _, ...userData } = existingUser.toObject();
+        const { password: _, ...userData } = user.toObject();
 
         res.status(200).json({
             message: "Login successful",
@@ -110,24 +135,35 @@ const updateProfile = async (req, res) => {
         const updates = req.body;
 
         const allowedFieldsByRole = {
-            JobSeeker: ["name", "email", "profilePhoto", "skills", "experience", "education", "certificates"],
-            Employer: ["name", "email"],
+            JobSeeker: [
+                "name",
+                "email",
+                "profilePhoto",
+                "personalHeadline",
+                "about",
+                "location",
+                "resume",
+                "skills",
+                "experience",
+                "education",
+                "certificates"
+            ],
+            Employer: ["name", "email", "companyId"],
             Admin: ["name", "email"]
         };
 
         const allowedFields = allowedFieldsByRole[req.user.role] || [];
         const filteredUpdates = {};
         for (let key of allowedFields) {
-            if (updates[key] !== undefined) {
-                filteredUpdates[key] = updates[key];
-            }
+            if (updates[key] !== undefined) filteredUpdates[key] = updates[key];
         }
 
-        const Model = req.user.role === "JobSeeker"
-            ? JobSeeker
-            : req.user.role === "Employer"
-                ? Employer
-                : User;
+        const Model =
+            req.user.role === "JobSeeker"
+                ? JobSeeker
+                : req.user.role === "Employer"
+                    ? Employer
+                    : User;
 
         const updatedUser = await Model.findByIdAndUpdate(
             userId,
@@ -155,11 +191,10 @@ const changePassword = async (req, res) => {
         if (!oldPassword || !newPassword)
             return res.status(400).json({ error: "Both old and new password required" });
 
-        const existingUser = await User.findById(userId);
-        if (!existingUser)
-            return res.status(404).json({ error: "User not found" });
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ error: "User not found" });
 
-        const isMatch = await bcrypt.compare(oldPassword, existingUser.password);
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
         if (!isMatch)
             return res.status(400).json({ error: "Old password is incorrect" });
 
@@ -170,8 +205,8 @@ const changePassword = async (req, res) => {
             });
         }
 
-        existingUser.password = await bcrypt.hash(newPassword, 10);
-        await existingUser.save();
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save();
 
         res.status(200).json({ message: "Password changed successfully" });
     } catch (err) {
@@ -179,7 +214,7 @@ const changePassword = async (req, res) => {
     }
 };
 
-// ================= VIEW PROFILE =================
+// ================= VIEW OWN PROFILE =================
 const viewProfile = async (req, res) => {
     try {
         const userId = req.user.id;
