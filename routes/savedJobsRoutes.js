@@ -9,9 +9,9 @@ const {
 const { authMiddleware, authorize } = require('../middleware/auth');
 // ====================================================================
 
-router.post('/', authMiddleware, authorize(['jobSeeker']), addSavedJob);
-router.get('/', authMiddleware, authorize(['jobSeeker']), getMySavedJobs);
-router.get('/:id', authMiddleware, authorize(['jobSeeker']), getSavedJobDetails);
-router.delete('/:id', authMiddleware, authorize(['jobSeeker']), deleteSavedJob);
+router.post('/', authMiddleware, authorize(['JobSeeker']), addSavedJob);
+router.get('/', authMiddleware, authorize(['JobSeeker']), getMySavedJobs);
+router.get('/:id', authMiddleware, authorize(['JobSeeker']), getSavedJobDetails);
+router.delete('/:id', authMiddleware, authorize(['JobSeeker']), deleteSavedJob);
 
 module.exports = router;

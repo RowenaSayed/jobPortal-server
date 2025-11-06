@@ -14,7 +14,7 @@ const addSavedJob = async (req, res) => {
             });
         }
 
-        if (user.role !== "jobSeeker") {
+        if (user.role !== "JobSeeker") {
             return res.status(403).json({
                 message: "You are denied to Save job"
             });

@@ -10,7 +10,7 @@ const createJob = async (req, res) => {
             return res.status(401).json({ message: "Unauthorized - user not found" });
         }
 
-        if (user.role !== "employer") {
+        if (user.role !== "Employer") {
             return res.status(403).json({ message: "Access denied - only employers can post jobs" });
         }
 
@@ -95,7 +95,7 @@ const createMultipleJobs = async (req, res) => {
     try {
         const user = req.user;
 
-        if (!user || user.role !== "employer") {
+        if (!user || user.role !== "Employer") {
             return res.status(403).json({ message: "Access denied - only employers can post jobs" });
         }
 
@@ -161,7 +161,7 @@ const updateJob = async (req, res) => {
         const user = req.user;
         const { id } = req.params;
 
-        if (user.role !== "employer") {
+        if (user.role !== "Employer") {
             return res.status(403).json({ message: "Access denied" });
         }
 
@@ -187,7 +187,7 @@ const deleteJob = async (req, res) => {
         const user = req.user;
         const { id } = req.params;
 
-        if (user.role !== "employer") {
+        if (user.role !== "Employer") {
             return res.status(403).json({ message: "Access denied" });
         }
 
@@ -223,7 +223,7 @@ const getAllEmployerJobs = async (req, res) => {
             return res.status(401).json({ message: "Unauthorized - user not found" });
         }
 
-        if (user.role !== "employer") {
+        if (user.role !== "Employer") {
             return res.status(403).json({ message: "Access denied - only employers allowed" });
         }
 
@@ -262,7 +262,7 @@ const getMyJobsApplications = async (req, res) => {
     try {
         const user = req.user;
 
-        if (user.role !== "employer") {
+        if (user.role !== "Employer") {
             return res.status(403).json({ message: "Access denied" });
         }
 
