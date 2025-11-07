@@ -33,7 +33,7 @@ router.delete("/:applicationId", authMiddleware, authorize(["JobSeeker"]), delet
 
 router.get("/job/:jobId", authMiddleware, authorize(["Employer", "Admin"]), getJobApplications);
 
-router.patch("/:applicationId/status", authMiddleware, authorize(["Employer", "Admin"]), updateApplicationStatus);
+router.patch("/status/:applicationId", authMiddleware, authorize(["Employer", "Admin"]), updateApplicationStatus);
 
 
 module.exports = router;

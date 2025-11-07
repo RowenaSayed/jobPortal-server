@@ -24,13 +24,15 @@ const reviewRoutes = require('./routes/reviewsRoutes');
 const jobsRoutes = require('./routes/jobsRoutes');
 const SavedjobsRoutes = require('./routes/savedJobsRoutes');
 const appsRoutes = require('./routes/ApplicationRoutes');
+const alertRoutes=require('./routes/alertRoutes')
 
-app.use('/api/apps', appsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/jobs',jobsRoutes );
 app.use('/api/saved',SavedjobsRoutes );
+app.use('/api/apps', appsRoutes);
+app.use('/api/job-alerts', alertRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

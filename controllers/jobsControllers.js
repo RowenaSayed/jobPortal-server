@@ -39,28 +39,28 @@ const createJob = async (req, res) => {
             return res.status(400).json({ message: "Title, description, and deadline are required" });
         }
 
-        // 🧠 Enum validation
         const validJobTypes = ["Full-time", "Part-time", "Internship", "Contract"];
-        const validEducationLevels = ["Student", "Bachelor's", "Master's", "PhD", "Other"];
+        const validEducationLevels = ["Student", "Bachelor's Degree", "Master's Degree", "PhD", "Other"];
         const validExperienceLevels = ["Internship", "Entry-level", "Mid-level", "Senior"];
         const validCurrencies = ["USD ($)", "EUR (€)", "EGP (£)"];
         const validApplicationMethods = ["Apply on JobLink", "External Link", "Email"];
 
         if (jobType && !validJobTypes.includes(jobType)) {
-            return res.status(400).json({ message: "Invalid job type" });
+            return res.status(400).json({ message: `Invalid job type. Valid options: ${validJobTypes.join(", ")}` });
         }
         if (educationLevel && !validEducationLevels.includes(educationLevel)) {
-            return res.status(400).json({ message: "Invalid education level" });
+            return res.status(400).json({ message: `Invalid education level. Valid options: ${validEducationLevels.join(", ")}` });
         }
         if (experienceLevel && !validExperienceLevels.includes(experienceLevel)) {
-            return res.status(400).json({ message: "Invalid experience level" });
+            return res.status(400).json({ message: `Invalid experience level. Valid options: ${validExperienceLevels.join(", ")}` });
         }
         if (salary_currency && !validCurrencies.includes(salary_currency)) {
-            return res.status(400).json({ message: "Invalid salary currency" });
+            return res.status(400).json({ message: `Invalid salary currency. Valid options: ${validCurrencies.join(", ")}` });
         }
         if (applicationMethod && !validApplicationMethods.includes(applicationMethod)) {
-            return res.status(400).json({ message: "Invalid application method" });
+            return res.status(400).json({ message: `Invalid application method. Valid options: ${validApplicationMethods.join(", ")}` });
         }
+
 
         const newJob = await Job.create({
             title,
