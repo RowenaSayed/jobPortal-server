@@ -1,9 +1,14 @@
 const mongoose = require("mongoose");
+
 const NotificationSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+
     message: { type: String, required: true },
+
     readStatus: { type: Boolean, default: false },
-    notificationType: { type: String }
-}, { timestamps: true });   
-const Notification = mongoose.model("Notification", NotificationSchema);
-module.exports = Notification;
+
+    job_id: { type: mongoose.Schema.Types.ObjectId, ref: "Job", required: true },
+
+}, { timestamps: true });
+
+module.exports = mongoose.model("Notification", NotificationSchema);

@@ -5,6 +5,7 @@ const options = { discriminatorKey: "role", timestamps: true };
 // ================== BASE USER ==================
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },
+    profilePhoto: { type: String },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: {
         type: String,
@@ -19,7 +20,6 @@ const User = mongoose.model("User", UserSchema);
 
 // ================== JOB SEEKER ==================
 const JobSeekerSchema = new mongoose.Schema({
-    profilePhoto: { type: String },
     personalHeadline: { type: String },
     about: { type: String },
     location: { type: String },

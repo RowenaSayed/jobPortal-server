@@ -1,5 +1,7 @@
 const Job = require("../models/Job");
 const Application = require("../models/Applications");
+const triggerJobAlerts = require("../utils/triggerJobsAlert");
+
 
 //  Create a single job (Employers only)
 const createJob = async (req, res) => {
@@ -61,7 +63,6 @@ const createJob = async (req, res) => {
             return res.status(400).json({ message: `Invalid application method. Valid options: ${validApplicationMethods.join(", ")}` });
         }
 
-
         const newJob = await Job.create({
             title,
             company: user.companyId,
@@ -81,14 +82,22 @@ const createJob = async (req, res) => {
             status: "pending",
         });
 
+        // ====== Trigger Job Alerts ======
+        triggerJobAlerts({
+            ...newJob.toObject(),
+            skills: newJob.skillsRequired 
+        });
+
         return res.status(201).json({
             message: "Job added successfully",
             job: newJob,
         });
+
     } catch (err) {
         return res.status(500).json({ message: "Internal server error", error: err.message });
     }
 };
+
 
 //  Create multiple jobs (bulk insert)
 const createMultipleJobs = async (req, res) => {

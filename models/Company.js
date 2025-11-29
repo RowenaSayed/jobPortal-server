@@ -15,12 +15,6 @@ const CompanySchema = new mongoose.Schema({
         type: String,
         default: null
     },
-    reviews: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Review"
-        }
-    ],
     industry: { type: String },
     website: { type: String },
     location: { type: String }
